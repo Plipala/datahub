@@ -114,6 +114,10 @@ AND
         OR
         protoPayload.metadata.jobChange.job.jobStats.queryStats.referencedViews:*
     )
+    AND (
+        protoPayload.metadata.jobChange.job.jobConfig.queryConfig.destinationTable !~ "projects/.*/datasets/_.*/tables/anon.*"
+
+    )
 )
 AND
 timestamp >= "{start_time}"
@@ -735,7 +739,7 @@ class BigQuerySource(SQLAlchemySource):
                 try:
                     parser = BigQuerySQLParser(e.query)
                     referenced_objs = set(
-                        map(lambda x: x.split(".")[-1], parser.get_tables())
+                        map(lambda x: ".".join(x.split(".")[-2:]), parser.get_tables())
                     )
                 except Exception as ex:
                     logger.warning(
@@ -746,8 +750,8 @@ class BigQuerySource(SQLAlchemySource):
                 curr_lineage_str = lineage_map[destination_table_str]
                 new_lineage_str = set()
                 for lineage_str in curr_lineage_str:
-                    name = lineage_str.split("/")[-1]
-                    if name in referenced_objs:
+                    name = lineage_str.split("/")[-3] + '.' + lineage_str.split("/")[-1]
+                    if name.lower() in referenced_objs:
                         new_lineage_str.add(lineage_str)
                 lineage_map[destination_table_str] = new_lineage_str
             if not (has_table or has_view):
