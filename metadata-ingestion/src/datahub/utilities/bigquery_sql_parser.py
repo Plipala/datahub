@@ -32,6 +32,8 @@ class BigQuerySQLParser(SQLParser):
         sql_query = BigQuerySQLParser._escape_object_name_after_keyword_from(sql_query)
         sql_query = BigQuerySQLParser._remove_comma_before_from(sql_query)
 
+        sql_query = BigQuerySQLParser._escape_update_set(sql_query)
+
         return sql_query
 
     @staticmethod
@@ -77,6 +79,13 @@ class BigQuerySQLParser(SQLParser):
             sql_query,
             flags=re.IGNORECASE,
         )
+
+    @staticmethod
+    def _escape_update_set(sql_query: str) ->  str:
+        """
+        Reason: UPDATE SET will breaks sqllineage later on
+        """
+        return re.sub(r"((?<!-)\bupdate\s*set\b)(?!-)", "__UPDATE SET", sql_query, flags=re.IGNORECASE)
 
     def get_tables(self) -> List[str]:
         return self.parser.get_tables()
